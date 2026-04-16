@@ -1,23 +1,14 @@
-name: Build InputStream Vivid Addon
+name: Build InputStream Vivid
 on: [push, pull_request]
 
 jobs:
   build:
-    name: Build Linux-armv7
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: linux
-            arch: armv7
-            triplet: arm-linux
-            cmake-args: -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=arm -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout Kodi Source
+      # 下载Kodi 21 (Omega) 源码（仅用头文件，不编译）
+      - name: Get Kodi Source
         uses: actions/checkout@v4
         with:
           repository: xbmc/xbmc
@@ -25,39 +16,36 @@ jobs:
           path: kodi_src
           fetch-depth: 1
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: 'aebdcca3833a60ad33e4ce848437eee434669ed4'
-          vcpkgDirectory: ${{ github.workspace }}/vcpkg
-
-      - name: Install Build Tools
+      # 安装ARMv7交叉编译工具
+      - name: Install ARM Toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ pkg-config build-essential gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+          sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake build-essential
 
-      - name: Configure and Build
-        shell: bash
+      # 交叉编译（核心：指定KODI_SOURCE_DIR，无find_package依赖）
+      - name: Build Addon
         run: |
           cmake -B build -S . \
-            -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
-            -DKODI_SOURCE_DIR=kodi_src \
-            ${{ matrix.cmake-args }}
+            -DCMAKE_SYSTEM_NAME=Linux \
+            -DCMAKE_SYSTEM_PROCESSOR=arm \
+            -DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc \
+            -DCMAKE_CXX_COMPILER=arm-linux-gnueabihf-g++ \
+            -DKODI_SOURCE_DIR=${{ github.workspace }}/kodi_src
           cmake --build build --config Release --parallel
 
-      - name: Prepare Package
-        shell: bash
+      # 打包Kodi标准插件
+      - name: Package Addon
         run: |
-          VERSION=$(grep 'version="' addon.xml | grep -v '<?xml' | head -1 | sed -n 's/.*version="\([^"]*\)".*/\1/p')
+          VERSION=$(grep 'version="' addon.xml | grep -v '<?xml' | head -n1 | sed 's/.*version="\([^"]*\)".*/\1/')
           ADDON_ID="inputstream.vivid"
           mkdir -p $ADDON_ID
           cp addon.xml $ADDON_ID/
-          find build -name "*.so" -exec cp {} $ADDON_ID/$ADDON_ID.so \;
+          cp build/$ADDON_ID.so $ADDON_ID/
           mkdir -p staging
           mv $ADDON_ID staging/
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      # 上传编译产物（可直接在CoreELEC安装）
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
