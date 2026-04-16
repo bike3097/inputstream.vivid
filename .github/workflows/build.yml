@@ -1,7 +1,11 @@
 name: Build & Release
-# 👇 新增：赋予令牌创建Release的权限（核心修复）
+# 赋予Release创建权限
 permissions:
   contents: write
+
+# 👇 新增：强制使用Node.js24，消除所有弃用警告
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
   workflow_dispatch:
@@ -19,7 +23,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "TAG=v$VERSION" >> $GITHUB_ENV
 
-      # 原生打包Kodi插件（无依赖、永不报错）
+      # 原生打包Kodi插件，无依赖
       - name: Build Kodi Addon
         run: |
           ADDON_ID=$(grep -oP 'id="\K[^"]+' addon.xml | head -1)
