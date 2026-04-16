@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 下载Kodi 21源码（模板原版）
+      # 下载Kodi 21源码（和你模板完全一致）
       - name: Checkout Kodi Source
         uses: actions/checkout@v4
         with:
@@ -25,13 +25,13 @@ jobs:
           path: kodi_src
           fetch-depth: 1
 
-      # 安装ARM编译工具
+      # 安装编译工具
       - name: Install Linux Build Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake g++ pkg-config build-essential gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
 
-      # 编译
+      # 编译（模板原生命令）
       - name: Configure and Build
         shell: bash
         run: |
@@ -40,7 +40,7 @@ jobs:
             ${{ matrix.cmake-args }}
           cmake --build build --config Release --parallel
 
-      # 打包插件
+      # 打包
       - name: Prepare Artifacts
         shell: bash
         run: |
@@ -51,7 +51,7 @@ jobs:
           mkdir -p staging
           mv $ADDON_ID staging/
 
-      # 🔥 关键修改：无环境变量，固定产物名称
+      # 上传（固定名称，无任何变量）
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
