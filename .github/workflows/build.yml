@@ -6,8 +6,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 拉取全量代码，确保所有文件都存在
 
-      # 下载Kodi 21 (Omega) 源码（仅用头文件，不编译）
+      # 打印目录结构（排查文件位置，自动找到源码）
+      - name: List Project Files
+        run: find . -type f -name "*.cpp" -o -name "*.h" | head -20
+
+      # 下载Kodi源码
       - name: Get Kodi Source
         uses: actions/checkout@v4
         with:
@@ -16,13 +22,13 @@ jobs:
           path: kodi_src
           fetch-depth: 1
 
-      # 安装ARMv7交叉编译工具
+      # 安装交叉编译工具
       - name: Install ARM Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake build-essential
 
-      # 交叉编译（核心：指定KODI_SOURCE_DIR，无find_package依赖）
+      # 编译
       - name: Build Addon
         run: |
           cmake -B build -S . \
@@ -33,7 +39,7 @@ jobs:
             -DKODI_SOURCE_DIR=${{ github.workspace }}/kodi_src
           cmake --build build --config Release --parallel
 
-      # 打包Kodi标准插件
+      # 打包插件
       - name: Package Addon
         run: |
           VERSION=$(grep 'version="' addon.xml | grep -v '<?xml' | head -n1 | sed 's/.*version="\([^"]*\)".*/\1/')
@@ -45,7 +51,7 @@ jobs:
           mv $ADDON_ID staging/
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # 上传编译产物（可直接在CoreELEC安装）
+      # 上传产物
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
