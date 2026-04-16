@@ -17,8 +17,8 @@ jobs:
       - name: Install build tools
         run: |
           python -m pip install -U pip
-          # ✅ 修复：从源码安装 kodi-addon-dev（唯一可行方式）
-          python -m pip install git+https://github.com/xbmc/kodi-addon-dev.git
+          # ✅ 终极修复：直接下载ZIP包安装，无需Git克隆，无认证问题
+          python -m pip install https://github.com/xbmc/kodi-addon-dev/archive/refs/heads/master.zip
 
       - name: Read version from addon.xml
         id: get_version
