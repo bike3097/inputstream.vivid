@@ -1,6 +1,5 @@
 name: Build InputStream Vivid Addon
-
-on: 
+on: [push, pull_request]
 
 jobs:
   build:
@@ -10,7 +9,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 仅保留CoreELEC-ng 21.3 支持的 linux-armv7 架构
           - os: linux
             arch: armv7
             triplet: arm-linux
@@ -19,8 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 下载Kodi 21(Omega)源码（提供头文件）
-      - name: Checkout Kodi Source (Omega 21)
+      - name: Checkout Kodi Source
         uses: actions/checkout@v4
         with:
           repository: xbmc/xbmc
@@ -28,21 +25,17 @@ jobs:
           path: kodi_src
           fetch-depth: 1
 
-      # 2. 固定vcpkg版本
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgGitCommitId: 'aebdcca3833a60ad33e4ce848437eee434669ed4'
           vcpkgDirectory: ${{ github.workspace }}/vcpkg
 
-      # 3. 安装armv7交叉编译工具链
-      - name: Install Linux Armv7 Build Tools
+      - name: Install Build Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ pkg-config build-essential
-          sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+          sudo apt-get install -y cmake g++ pkg-config build-essential gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
 
-      # 4. CMake配置+编译（匹配项目CMakeLists.txt）
       - name: Configure and Build
         shell: bash
         run: |
@@ -53,35 +46,20 @@ jobs:
             ${{ matrix.cmake-args }}
           cmake --build build --config Release --parallel
 
-      # 5. 打包插件（严格匹配inputstream.vivid命名规则）
-      - name: Prepare Addon Package
+      - name: Prepare Package
         shell: bash
         run: |
-          # 从addon.xml提取插件版本
           VERSION=$(grep 'version="' addon.xml | grep -v '<?xml' | head -1 | sed -n 's/.*version="\([^"]*\)".*/\1/p')
-          echo "Detected version: $VERSION"
-          
-          # 插件ID（与addon.xml一致）
           ADDON_ID="inputstream.vivid"
           mkdir -p $ADDON_ID
-          
-          # 复制插件配置文件
           cp addon.xml $ADDON_ID/
-
-          # 复制编译好的so文件（无lib前缀，直接用inputstream.vivid.so）
           find build -name "*.so" -exec cp {} $ADDON_ID/$ADDON_ID.so \;
-          
-          # 打包目录
           mkdir -p staging
           mv $ADDON_ID staging/
-          
-          # 导出版本号
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # 6. 上传编译产物
-      - name: Upload Addon Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          # 产物名：inputstream.vivid-1.2.0-linux-armv7
           name: inputstream.vivid-${{ env.VERSION }}-linux-armv7
           path: staging/
