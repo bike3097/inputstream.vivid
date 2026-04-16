@@ -1,19 +1,31 @@
-# CMake最低版本要求（Kodi 21要求≥3.16）
 cmake_minimum_required(VERSION 3.16)
-
-# 项目名称（与插件ID一致）
 project(inputstream.vivid)
 
-# C++标准：Kodi 21使用C++17
+# 插件ID（必须和addon.xml一致）
+set(ADDON_ID inputstream.vivid)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 预定义宏：Linux平台、大文件支持（>4GB）
-add_definitions(-D_LINUX -D_FILE_OFFSET_BITS=64)
+# 核心：直接引用Kodi源码头文件（解决FindKodi.cmake报错）
+include_directories(${KODI_SOURCE_DIR}/xbmc)
+include_directories(${KODI_SOURCE_DIR}/xbmc/addons)
+include_directories(${KODI_SOURCE_DIR}/xbmc/cores)
+include_directories(${KODI_SOURCE_DIR}/xbmc/utils)
 
-# 查找并包含Kodi开发头文件
-find_package(Kodi REQUIRED)
-include_directories(${KODI_INCLUDE_DIR})
+# 编译源码
+file(GLOB SOURCES
+    main.cpp
+    Utils.cpp
+    VividDecoder.cpp
+)
 
-# 进入src目录编译核心代码
-add_subdirectory(src)
+# 生成插件二进制（Kodi要求无lib前缀）
+add_library(${ADDON_ID} SHARED ${SOURCES})
+
+# 禁用前缀（关键！生成 inputstream.vivid.so 而非 libinputstream.vivid.so）
+set_target_properties(${ADDON_ID} PROPERTIES PREFIX "")
+
+# 链接依赖
+if(UNIX)
+    target_link_libraries(${ADDON_ID} pthread)
+endif()
