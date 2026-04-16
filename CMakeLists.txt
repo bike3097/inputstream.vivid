@@ -1,34 +1,26 @@
 cmake_minimum_required(VERSION 3.16)
 project(inputstream.vivid)
 
-# 插件配置
+# 插件基础配置
 set(ADDON_ID inputstream.vivid)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# 核心：Kodi 头文件路径
-include_directories(${KODI_SOURCE_DIR})
+# Kodi 21 头文件路径
 include_directories(${KODI_SOURCE_DIR}/xbmc)
 include_directories(${KODI_SOURCE_DIR}/xbmc/addons)
+include_directories(${CMAKE_SOURCE_DIR}/src)
 
-# ✅ 终极修复：用 PROJECT_SOURCE_DIR 绝对路径指定源码（永远不会找不到）
-set(SOURCES
-    ${PROJECT_SOURCE_DIR}/main.cpp
-    ${PROJECT_SOURCE_DIR}/Utils.cpp
-    ${PROJECT_SOURCE_DIR}/VividDecoder.cpp
+# ✅ 核心修复：自动搜索 src 目录下的所有源码文件
+file(GLOB_RECURSE SOURCES
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/*.h
 )
 
-set(HEADERS
-    ${PROJECT_SOURCE_DIR}/Utils.h
-    ${PROJECT_SOURCE_DIR}/VividDecoder.h
-)
-
-# 编译动态库
-add_library(${ADDON_ID} SHARED ${SOURCES} ${HEADERS})
+# 编译插件（Kodi 规范：无 lib 前缀）
+add_library(${ADDON_ID} SHARED ${SOURCES})
 set_target_properties(${ADDON_ID} PROPERTIES PREFIX "")
 
-# 系统库依赖
-if(UNIX)
-    target_link_libraries(${ADDON_ID} pthread dl)
-endif()
+# 系统依赖库
+target_link_libraries(${ADDON_ID} pthread dl)
