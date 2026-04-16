@@ -6,29 +6,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 拉取全量代码，确保所有文件都存在
 
-      # 打印目录结构（排查文件位置，自动找到源码）
-      - name: List Project Files
-        run: find . -type f -name "*.cpp" -o -name "*.h" | head -20
-
-      # 下载Kodi源码
-      - name: Get Kodi Source
+      # 下载 Kodi 21 (Omega) 源码
+      - name: Checkout Kodi Source
         uses: actions/checkout@v4
         with:
           repository: xbmc/xbmc
           ref: Omega
           path: kodi_src
-          fetch-depth: 1
 
-      # 安装交叉编译工具
+      # 安装 ARMv7 交叉编译工具
       - name: Install ARM Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake build-essential
 
-      # 编译
+      # 交叉编译插件
       - name: Build Addon
         run: |
           cmake -B build -S . \
@@ -39,7 +32,7 @@ jobs:
             -DKODI_SOURCE_DIR=${{ github.workspace }}/kodi_src
           cmake --build build --config Release --parallel
 
-      # 打包插件
+      # 打包成 Kodi 标准插件
       - name: Package Addon
         run: |
           VERSION=$(grep 'version="' addon.xml | grep -v '<?xml' | head -n1 | sed 's/.*version="\([^"]*\)".*/\1/')
@@ -47,13 +40,10 @@ jobs:
           mkdir -p $ADDON_ID
           cp addon.xml $ADDON_ID/
           cp build/$ADDON_ID.so $ADDON_ID/
-          mkdir -p staging
-          mv $ADDON_ID staging/
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # 上传产物
+      # 上传编译产物
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: inputstream.vivid-${{ env.VERSION }}-linux-armv7
-          path: staging/
+          path: inputstream.vivid/
