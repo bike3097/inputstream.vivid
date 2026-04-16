@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Kodi插件核心描述文件：定义ID、名称、版本、依赖、接口、元数据 -->
+<addon
+  id="inputstream.vivid"               <!-- 插件唯一ID（必须与文件名/代码一致） -->
+  name="HDR Vivid 硬件解码器"          <!-- 插件显示名称 -->
+  version="1.2.0"                      <!-- 版本号（唯一需要手动修改的地方） -->
+  provider-name="CoreELEC User"        <!-- 作者/提供者名称 -->
+>
+  <!-- 依赖声明：需要依赖的Kodi核心组件 -->
+  <requires>
+    <import addon="kodi.inputstream" version="21.0.0"/> <!-- InputStream接口版本 -->
+    <import addon="xbmc.core" version="21.0.0"/>        <!-- Kodi核心版本 -->
+  </requires>
+
+  <!-- 扩展点：声明为InputStream类型插件，并指定动态库 -->
+  <extension
+    point="kodi.inputstream.stream"     <!-- 插件类型：输入流处理器 -->
+    library_linux-arm="inputstream.vivid.so"  <!-- ARM平台编译出的.so文件名 -->
+  />
+
+  <!-- 插件元数据：显示在Kodi插件管理器中的信息 -->
+  <extension point="xbmc.addon.metadata">
+    <summary lang="zh_CN">MKV/ISO HDR Vivid 晶晨硬解插件</summary>
+    <description lang="zh_CN">支持 MKV、ISO 格式内 HDR Vivid 视频硬件解码，带音频解码与进度条拖动查找，适配 CoreELEC-ng 21.3 armv7</description>
+    <platform>linux</platform>          <!-- 支持平台 -->
+    <license>GPL-2.0-or-later</license> <!-- 开源协议 -->
+  </extension>
+</addon>

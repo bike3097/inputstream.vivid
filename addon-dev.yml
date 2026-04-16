@@ -1,0 +1,16 @@
+# kodi-addon-dev 编译工具配置文件
+# 作用：定义编译架构、依赖、目标输出，无需修改版本号
+
+cmake: true                              # 使用CMake构建
+arch:
+  - linux-arm                            # 目标架构：ARM 32位（armv7）
+kodi:
+  version: "21"                          # 适配Kodi主版本：21 (Omega)
+  platform:
+    - Linux                              # 目标系统
+deps:
+  - name: kodi.inputstream               # 依赖Kodi的InputStream组件
+    version: "21.0.0"
+target:
+  source: src                            # 源码目录
+  output: inputstream.vivid              # 输出插件名（与addon.xml的id一致）
