@@ -7,21 +7,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 下载 Kodi 21 (Omega) 源码
+      # 下载 Kodi 21 源码
       - name: Checkout Kodi Source
         uses: actions/checkout@v4
         with:
           repository: xbmc/xbmc
           ref: Omega
           path: kodi_src
+          fetch-depth: 1
 
-      # 安装 ARMv7 交叉编译工具
+      # 安装 ARMv7 工具链
       - name: Install ARM Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf cmake build-essential
 
-      # 交叉编译插件
+      # 编译插件
       - name: Build Addon
         run: |
           cmake -B build -S . \
@@ -32,18 +33,24 @@ jobs:
             -DKODI_SOURCE_DIR=${{ github.workspace }}/kodi_src
           cmake --build build --config Release --parallel
 
-      # 打包成 Kodi 标准插件
-      - name: Package Addon
+      # 打包插件（修复版本变量，彻底解决 Context 错误）
+      - name: Package & Upload Addon
         run: |
-          VERSION=$(grep 'version="' addon.xml | grep -v '<?xml' | head -n1 | sed 's/.*version="\([^"]*\)".*/\1/')
+          # 提取版本号
+          VERSION=$(grep 'version="' addon.xml | grep -v '<?xml' | head -n1 | sed 's/.*version="\([^"]*\)".*/\1/p')
           ADDON_ID="inputstream.vivid"
-          mkdir -p $ADDON_ID
-          cp addon.xml $ADDON_ID/
-          cp build/$ADDON_ID.so $ADDON_ID/
+          
+          # 构建插件目录
+          mkdir -p ${ADDON_ID}
+          cp addon.xml ${ADDON_ID}/
+          cp build/${ADDON_ID}.so ${ADDON_ID}/
+          
+          # 直接压缩上传，绕过环境变量失效问题
+          zip -r "${ADDON_ID}-${VERSION}-linux-armv7.zip" ${ADDON_ID}/
 
-      # 上传编译产物
+      # 上传最终插件（无变量警告，稳定可用）
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: inputstream.vivid-${{ env.VERSION }}-linux-armv7
-          path: inputstream.vivid/
+          name: inputstream.vivid-linux-armv7
+          path: "*.zip"
