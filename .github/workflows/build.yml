@@ -1,4 +1,7 @@
 name: Build & Release
+# 👇 新增：赋予令牌创建Release的权限（核心修复）
+permissions:
+  contents: write
 
 on:
   workflow_dispatch:
@@ -16,12 +19,10 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "TAG=v$VERSION" >> $GITHUB_ENV
 
-      # 🔥 核心：直接打包Kodi插件（无需任何Python工具，原生系统命令，永不报错）
+      # 原生打包Kodi插件（无依赖、永不报错）
       - name: Build Kodi Addon
         run: |
-          # 获取插件文件夹名称（标准Kodi插件格式）
           ADDON_ID=$(grep -oP 'id="\K[^"]+' addon.xml | head -1)
-          # 压缩为标准ZIP包（和原工具生成的文件完全一致）
           zip -r "${ADDON_ID}-${VERSION}-armv7.zip" . -x ".git/*" ".github/*" "*.md"
 
       - name: Upload build artifact
